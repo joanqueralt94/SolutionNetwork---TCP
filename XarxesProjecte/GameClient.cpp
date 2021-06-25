@@ -15,6 +15,14 @@ using namespace std;
 #define NUM_PLAYERS 2
 #define BUFFER_SIZE 2000
 
+static const string gameID = "GAME";
+static const string chatID = "CHAT";
+static const string tornID = "TORN";
+static const string cartaID = "CARTA";
+static const string separator = "%";
+static const string separatorCharTwo = "$";
+
+
 enum Culturas
 {
 	ARABE = 0,
@@ -90,9 +98,19 @@ struct Player
 	int torn;
 	bool isMyTurn = false;
 	int seed;
+	int contadorFamilies;
+
+	int contadorCartesArab = 0;
+	int contadorCartesBantu = 0;
+	int contadorCartesChina = 0;
+	int contadorCartesEsquimal = 0;
+	int contadorCartesIndia = 0;
+	int contadorCartesMexicana = 0;
+	int contadorCartesTirolesa = 0;
 };
 
-void RecivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, vector<string>* gMensajes, sf::SocketSelector* ss, int* currentTorn)
+
+void ReceivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, vector<string>* gMensajes, sf::SocketSelector* ss, int* currentTorn, vector<Card> myHand, Player player)
 {
 	char buffer[BUFFER_SIZE];
 	string msn;
@@ -110,10 +128,7 @@ void RecivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, v
 					msn = buffer;
 					//DIFERENCIAR ENTRE XAT I GAME
 					
-					static const string gameID = "GAME";
-					static const string chatID = "CHAT";
-					static const string tornID = "TORN";
-					static const string separator = "%";
+					
 
 					const auto pos = msn.find(separator);
 
@@ -131,7 +146,39 @@ void RecivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, v
 					}
 					else if (header == gameID)
 					{
-						gMensajes->push_back(body);
+						
+						const auto header2 = body.substr(0, 1);
+
+						const auto subbody = body.substr(1, body.size());
+
+						if (header2 == to_string(player.torn))
+						{
+							
+							const auto cultura = subbody.substr(0, 1);
+							const auto familia = subbody.substr(1, 2);
+
+							int tempCultura = stoi(cultura);
+							int tempFamilia = stoi(familia);
+
+
+							cout << "MESTAN DEMANANT LA CARTA " << tempCultura << " i " << tempFamilia << endl;
+							
+
+							for (int i = 0; i < myHand.size(); i++)
+							{
+								
+								if (myHand[i].c == tempCultura && myHand[i].f == tempFamilia)
+								{
+									cout << "TINC LA CARTA QUE EM DEMANEN" << endl;
+								}
+								//else cout << "NO TINC LA CARTA" << endl;
+							}
+
+
+						}
+
+
+						gMensajes->push_back(subbody);
 						if (gMensajes->size() > 25)
 						{
 							gMensajes->erase(gMensajes->begin(), gMensajes->begin() + 1);
@@ -169,10 +216,6 @@ int main()
 	std::size_t received;
 	sf::Socket::Status socketStatus;
 	std::string text = "Connected to: ";
-
-
-
-
 
 	vector<Directions> directionList;
 	vector<TcpSocket*> socketList;
@@ -221,6 +264,7 @@ int main()
 
 						++localPlayer.torn;
 						cout << localPlayer.torn << endl;
+						d.torn = localPlayer.torn;
 
 						directionList.push_back(d);
 						
@@ -347,38 +391,103 @@ int main()
 	wordText.setFillColor(sf::Color(0, 160, 0));
 	wordText.setStyle(sf::Text::Bold);
 
-
-	thread t1(RecivedFunction, socketList, &aMensajes, &gMensajes, &ss, &currentTorn);
-
 	Deck DeckGame;
 
 	DeckGame.Shuffle(localPlayer.seed);
 
+	
+	vector<Player> Players[NUM_PLAYERS];
 	vector<Card> myHand;
+
+
+	//myHand = DeckGame.DeckOfCards;
 
 	int contador = 1;
 
 	for (int i = 0; i < DeckGame.DeckOfCards.size(); i++)
 	{
-		
+
 		if (contador > NUM_PLAYERS)
 		{
 			contador = 1;
 		}
-		
+
 		if (contador == localPlayer.torn)
 		{
 			myHand.push_back(DeckGame.DeckOfCards[i]);
-			
+
 		}
 
 		contador++;
 	}
 
+
+
+	thread t1(ReceivedFunction, socketList, &aMensajes, &gMensajes, &ss, &currentTorn, myHand, localPlayer);
+
+	
+
+	
+
 	for (int i = 0; i < myHand.size(); i++)
 	{
 		cout << "This is my hand: CULTURA-> " << myHand[i].c << " and FAMILY-> " << myHand[i].f << endl;
 	}
+
+	
+	for (int i = 0; i < myHand.size(); i++)
+	{
+		
+
+		if (myHand[i].c == Culturas::ARABE) localPlayer.contadorCartesArab++;
+		else if (myHand[i].c == Culturas::BANTU) localPlayer.contadorCartesBantu++;
+		else if (myHand[i].c == Culturas::CHINA) localPlayer.contadorCartesChina++;
+		else if (myHand[i].c == Culturas::ESQUIMAL) localPlayer.contadorCartesEsquimal++;
+		else if (myHand[i].c == Culturas::INDIA) localPlayer.contadorCartesIndia++;
+		else if (myHand[i].c == Culturas::MEXICANA) localPlayer.contadorCartesMexicana++;
+		else if (myHand[i].c == Culturas::TIROLESA) localPlayer.contadorCartesTirolesa++;
+
+		if (localPlayer.contadorCartesArab == 6)
+		{
+			localPlayer.contadorFamilies++;
+		}
+		else if (localPlayer.contadorCartesBantu == 6)
+		{
+			localPlayer.contadorFamilies++;
+			
+		}
+		else if (localPlayer.contadorCartesChina == 6)
+		{
+			localPlayer.contadorFamilies++;
+			
+		}
+		else if (localPlayer.contadorCartesEsquimal == 6)
+		{
+			localPlayer.contadorFamilies++; 
+		}
+		else if (localPlayer.contadorCartesIndia == 6)
+		{
+			localPlayer.contadorFamilies++; 
+
+		}
+		else if (localPlayer.contadorCartesMexicana == 6)
+		{
+			localPlayer.contadorFamilies++;
+		}
+		else if (localPlayer.contadorCartesTirolesa == 6)
+		{
+			localPlayer.contadorFamilies++;
+		}
+
+	}
+
+	cout << "CONTADOR ARAB " << localPlayer.contadorCartesArab << endl;
+	cout << "CONTADOR BANTU " << localPlayer.contadorCartesBantu << endl;
+	cout << "CONTADOR CHINA " << localPlayer.contadorCartesChina << endl;
+	cout << "CONTADOR ESQUIMAL " << localPlayer.contadorCartesEsquimal << endl;
+	cout << "CONTADOR INDIA " << localPlayer.contadorCartesIndia << endl;
+	cout << "CONTADOR MEXICANA " << localPlayer.contadorCartesMexicana << endl;
+	cout << "CONTADOR TIROLESA " << localPlayer.contadorCartesTirolesa << endl;
 
 	while (window.isOpen() && windowGame.isOpen())
 	{
@@ -464,6 +573,7 @@ int main()
 					wordEntry.erase(wordEntry.length() - 1, wordEntry.length());
 				break;
 			}
+
 		}
 
 		windowGame.draw(separator);
