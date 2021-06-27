@@ -19,8 +19,11 @@ static const string gameID = "GAME";
 static const string chatID = "CHAT";
 static const string tornID = "TORN";
 static const string cartaID = "CARTA";
+static const string winID = "WIN";
 static const string separatorChar = "%";
 static const string separatorCharTwo = "$";
+
+bool gameEnd = false;
 
 
 enum Culturas
@@ -96,9 +99,10 @@ struct Player
 {
 	int torn;
 	bool isMyTurn = false;
+	bool win = false;
 	int seed;
-	int contadorFamilies;
 
+	int contadorFamilies = 0;
 	int contadorCartesArab = 0;
 	int contadorCartesBantu = 0;
 	int contadorCartesChina = 0;
@@ -123,69 +127,6 @@ void ShowMyHand(vector<Card> hand, Player localPlayer)
 	}
 }
 
-void ShowScoreCounter(Player* player)
-{
-	cout << "-------------------------------------------------------" << endl;
-	cout << "SCORE FAMÍLIES : " << player->contadorFamilies << endl;
-
-}
-
-void UpdateMyFamCounter(vector<Card>* myHand, Player* localPlayer)
-{
-	localPlayer->contadorCartesArab = 0;
-	localPlayer->contadorCartesBantu = 0;
-	localPlayer->contadorCartesChina = 0;
-	localPlayer->contadorCartesEsquimal = 0;
-	localPlayer->contadorCartesIndia = 0;
-	localPlayer->contadorCartesMexicana = 0;
-	localPlayer->contadorCartesTirolesa = 0;
-	localPlayer->contadorFamilies = 0;
-
-	for (int i = 0; i < myHand->size(); i++)
-	{
-
-		if (myHand->at(i).c == Culturas::ARABE) localPlayer->contadorCartesArab++;
-		else if (myHand->at(i).c == Culturas::BANTU) localPlayer->contadorCartesBantu++;
-		else if (myHand->at(i).c == Culturas::CHINA) localPlayer->contadorCartesChina++;
-		else if (myHand->at(i).c == Culturas::ESQUIMAL) localPlayer->contadorCartesEsquimal++;
-		else if (myHand->at(i).c == Culturas::INDIA) localPlayer->contadorCartesIndia++;
-		else if (myHand->at(i).c == Culturas::MEXICANA) localPlayer->contadorCartesMexicana++;
-		else if (myHand->at(i).c == Culturas::TIROLESA) localPlayer->contadorCartesTirolesa++;
-
-		if (localPlayer->contadorCartesArab == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesBantu == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesChina == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesEsquimal == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesIndia == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesMexicana == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-		else if (localPlayer->contadorCartesTirolesa == 6)
-		{
-			localPlayer->contadorFamilies++;
-		}
-
-		
-	}
-	ShowScoreCounter(localPlayer);
-}
-
 void ShowOtherPlayerHands(vector<Player> players)
 {
 	cout << "-------------------------------------------------------" << endl;
@@ -200,19 +141,118 @@ void ShowOtherPlayerHands(vector<Player> players)
 	}
 }
 
-void ShowFamiliesCounter(Player localPlayer)
+
+void ShowFamiliesCounter(Player* localPlayer)
 {
 	cout << "-------------------------------------------------------" << endl;
+	cout << "TOTAL SCORE: " << localPlayer->contadorFamilies << endl;
 	cout << "FAMILIES COUNTER:" << endl;
-	cout << "0-ARAB " << localPlayer.contadorCartesArab << endl;
-	cout << "1-BANTU " << localPlayer.contadorCartesBantu << endl;
-	cout << "2-CHINA " << localPlayer.contadorCartesChina << endl;
-	cout << "3-ESQUIMAL " << localPlayer.contadorCartesEsquimal << endl;
-	cout << "4-INDIA " << localPlayer.contadorCartesIndia << endl;
-	cout << "5-MEXICANA " << localPlayer.contadorCartesMexicana << endl;
-	cout << "6-TIROLESA " << localPlayer.contadorCartesTirolesa << endl;
+	cout << "0-ARAB " << localPlayer->contadorCartesArab << endl;
+	cout << "1-BANTU " << localPlayer->contadorCartesBantu << endl;
+	cout << "2-CHINA " << localPlayer->contadorCartesChina << endl;
+	cout << "3-ESQUIMAL " << localPlayer->contadorCartesEsquimal << endl;
+	cout << "4-INDIA " << localPlayer->contadorCartesIndia << endl;
+	cout << "5-MEXICANA " << localPlayer->contadorCartesMexicana << endl;
+	cout << "6-TIROLESA " << localPlayer->contadorCartesTirolesa << endl;
 
 }
+
+void RemoveFamilyCardsFromHand(vector<Card>*myHand, Culturas c)
+{
+	//TODO optimize
+	for (int j = 0; j < 6; j++)
+	{
+		for (int i = 0; i < myHand->size(); i++)
+		{
+			if (myHand->at(i).c == c)
+			{	
+				myHand->erase(myHand->begin() + i);
+			}
+		}
+	}
+
+	
+}
+
+void UpdateMyFamCounter(vector<Card>* myHand, Player* localPlayer)
+{
+	localPlayer->contadorCartesArab = 0;
+	localPlayer->contadorCartesBantu = 0;
+	localPlayer->contadorCartesChina = 0;
+	localPlayer->contadorCartesEsquimal = 0;
+	localPlayer->contadorCartesIndia = 0;
+	localPlayer->contadorCartesMexicana = 0;
+	localPlayer->contadorCartesTirolesa = 0;
+
+
+	for (int i = 0; i < myHand->size(); i++)
+	{
+		if (myHand->at(i).c == Culturas::ARABE) localPlayer->contadorCartesArab++;
+		else if (myHand->at(i).c == Culturas::BANTU) localPlayer->contadorCartesBantu++;
+		else if (myHand->at(i).c == Culturas::CHINA) localPlayer->contadorCartesChina++;
+		else if (myHand->at(i).c == Culturas::ESQUIMAL) localPlayer->contadorCartesEsquimal++;
+		else if (myHand->at(i).c == Culturas::INDIA) localPlayer->contadorCartesIndia++;
+		else if (myHand->at(i).c == Culturas::MEXICANA) localPlayer->contadorCartesMexicana++;
+		else if (myHand->at(i).c == Culturas::TIROLESA) localPlayer->contadorCartesTirolesa++;
+
+		if (localPlayer->contadorCartesArab >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::ARABE);
+			
+		}
+		else if (localPlayer->contadorCartesBantu >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::BANTU);
+			
+		}
+		else if (localPlayer->contadorCartesChina >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::CHINA);
+			
+		}
+		else if (localPlayer->contadorCartesEsquimal >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::ESQUIMAL);
+			
+		}
+		else if (localPlayer->contadorCartesIndia >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::INDIA);
+			
+		}
+		else if (localPlayer->contadorCartesMexicana >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::MEXICANA);
+			
+		}
+		else if (localPlayer->contadorCartesTirolesa >= 6)
+		{
+			localPlayer->contadorFamilies++;
+			RemoveFamilyCardsFromHand(myHand, Culturas::TIROLESA);
+			
+		}
+	}
+}
+
+void UpdateMyFamCounter(Player* localPlayer, Card card)
+{
+	if (card.c == Culturas::ARABE) localPlayer->contadorCartesArab = localPlayer->contadorCartesArab + 1;
+	else if (card.c == Culturas::BANTU) localPlayer->contadorCartesBantu = localPlayer->contadorCartesBantu + 1;
+	else if (card.c == Culturas::CHINA) localPlayer->contadorCartesChina = localPlayer->contadorCartesChina + 1;
+	else if (card.c == Culturas::ESQUIMAL) localPlayer->contadorCartesEsquimal = localPlayer->contadorCartesEsquimal + 1;
+	else if (card.c == Culturas::INDIA) localPlayer->contadorCartesIndia = localPlayer->contadorCartesIndia + 1;
+	else if (card.c == Culturas::MEXICANA) localPlayer->contadorCartesMexicana = localPlayer->contadorCartesMexicana + 1;
+	else if (card.c == Culturas::TIROLESA) localPlayer->contadorCartesTirolesa = localPlayer->contadorCartesTirolesa + 1;
+	
+}
+
+
 
 void ReceivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, vector<string>* gMensajes, sf::SocketSelector* ss, 
 	int* currentTorn, vector<Card>* myHand, Player player, vector<Player>* Players)
@@ -271,7 +311,7 @@ void ReceivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, 
 									cout << "TINC LA CARTA " << tempCultura << " i " << tempFamilia << endl; 
 
 									//TO DO copying in local new card for the player
-									/*for (int j = 0; j < Players->size(); i++)
+									/*for (int j = 0; j < Players->size(); j++)
 									{
 										if (Players->at(j).torn == stoi(header2))
 										{
@@ -284,10 +324,7 @@ void ReceivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, 
 
 									myHand->erase(myHand->begin() + i);
 									cout << "-------------------------" << endl;
-									cout << "T'han robat una nova carta!" << endl;
-									UpdateMyFamCounter(myHand, &player);
-									ShowFamiliesCounter(player);
-									
+									cout << "T'han robat una nova carta!" << endl;							
 
 								}
 								//else cout << "NO TINC LA CARTA" << tempCultura << " i " << tempFamilia << endl;
@@ -309,6 +346,17 @@ void ReceivedFunction(vector<sf::TcpSocket*> socket, vector<string>* aMensajes, 
 						*currentTorn = std::stoi(body);
 						cout << "Aquest es el nou torn A " << *currentTorn << endl;
 
+					}
+					else if (header == winID)
+					{
+						string winner = "Player " + body + " has win the game!";
+						gMensajes->push_back(winner);
+						if (gMensajes->size() > 25)
+						{
+							gMensajes->erase(gMensajes->begin(), gMensajes->begin() + 1);
+						}
+						cout << "---------------------------------------------" << endl;
+						cout << winner << endl;
 					}
 				}
 			}
@@ -564,7 +612,7 @@ int main()
 	
 	UpdateMyFamCounter(&myHand, &localPlayer);
 
-	ShowFamiliesCounter(localPlayer);
+	ShowFamiliesCounter(&localPlayer);
 
 	while (window.isOpen() && windowGame.isOpen())
 	{
@@ -578,9 +626,45 @@ int main()
 			localPlayer.isMyTurn = true;
 			
 		}
-		else localPlayer.isMyTurn = false;
+		//else localPlayer.isMyTurn = false;
 
 
+		/*if (localPlayer.contadorFamilies >= ((6 / (NUM_PLAYERS)) + 1))*/
+		if(localPlayer.contadorFamilies == 2)
+		{
+			localPlayer.win = true;
+			
+		}
+
+		if (localPlayer.win)
+		{
+			for (sf::TcpSocket* s : socketList)
+			{
+
+				string gWin = winID + separatorChar + std::to_string(localPlayer.torn);
+
+				socketStatus = s->send(gWin.c_str(), gWin.size() + 1);
+				if (socketStatus != sf::TcpSocket::Status::Done)
+				{
+					cout << "Error" << endl;
+				}
+
+				gWin = "Player " + std::to_string(localPlayer.torn) + " has Win the Game!";
+				gMensajes.push_back(gWin);
+
+
+				if (gMensajes.size() > 25)
+				{
+					gMensajes.erase(gMensajes.begin(), gMensajes.begin() + 1);
+				}
+				gWin = "";
+			}
+			cout << "---------------------------------------------------" << endl;
+			cout << "YOU HAVE WON" << endl;
+			system("pause");
+			windowGame.close();
+			window.close();
+		}
 
 		//GAME WINDOW
 		sf::Event eventoGame;
@@ -645,9 +729,7 @@ int main()
 											myHand.push_back(tempCard);
 											cout << "-------------------------" << endl;
 											cout << "Has robat una nova carta!" << endl;
-											ShowMyHand(myHand, localPlayer);
-											UpdateMyFamCounter(&myHand, &localPlayer);
-											ShowFamiliesCounter(localPlayer);
+											UpdateMyFamCounter(&localPlayer, tempCard);
 											Players[i].hand.erase(Players[i].hand.begin() + j);
 										}
 									}
@@ -674,7 +756,9 @@ int main()
 						wordEntry = "";
 					}
 					
-
+					ShowMyHand(myHand, localPlayer);
+					UpdateMyFamCounter(&myHand, &localPlayer);
+					ShowFamiliesCounter(&localPlayer);
 				}
 				break;
 
